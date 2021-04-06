@@ -64,7 +64,18 @@ class PandaRobotSupervisor(RobotSupervisor):
         targetPosition = ToArmCoord.convert(self.target.getPosition())
         message = [i for i in targetPosition]
         message.extend([i for i in self.motorPositionArr])
-        return message
+        return np.asarray(message)
+    def get_default_observation(self):
+        """
+        Simple implementation returning the default observation which is a zero vector in the shape
+        of the observation space.
+        :return: Starting observation zero vector
+        :rtype: list
+        """
+        Obs = [0.0 for _ in range(self.observation_space.shape[0])]
+        Obs[3] = -0.0698
+        return np.asarray(Obs)
+
     def get_reward(self, action):
         """
         Reward is - 2-norm for every step taken (extra points for getting close enough to the target)
@@ -102,6 +113,12 @@ class PandaRobotSupervisor(RobotSupervisor):
         else:
             done = False
         return done
+
+    # def reset(self):
+
+    #     self.robot = self.getSelf()
+    #     return self.get_observations()
+
     def solved(self):
         """
         This method checks whether the Panda goal reaching task is solved, so training terminates.
@@ -157,6 +174,14 @@ class PandaRobotSupervisor(RobotSupervisor):
             self.motorList[i].setVelocity(MOTOR_VELOCITY)
             self.motorList[i].setPosition(motorPosition)
             self.motorPositionArr_target[i]=motorPosition # Update motorPositionArr_target 
+
+    def step(self, action):
+        self.apply_action(action)
+        obs = self.get_observations()
+        reward = self.get_reward(action)
+        done = self.is_done()
+        info =""
+        return obs, reward, done, info 
 
     def setup_motors(self):
         """

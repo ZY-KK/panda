@@ -72,6 +72,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         # handshaking limit
         self.cnt_handshaking = 0
 
+
     def get_observations(self):
         """
         This get_observation implementation builds the required observation for the Panda goal reaching problem.
