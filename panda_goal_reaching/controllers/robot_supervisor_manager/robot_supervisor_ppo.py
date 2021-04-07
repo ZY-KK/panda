@@ -18,9 +18,10 @@ class PandaRobotSupervisor(RobotSupervisor):
         self.observation_space = Box(low=np.array([-np.inf, -np.inf, -np.inf, -2.8972, -1.7628, -2.8972, -3.0718, -2.8972, -0.0175, -2.8972]),
                                      high=np.array([np.inf,  np.inf,  np.inf, 2.8972,  1.7628,  2.8972, -0.0698,  2.8972,  3.7525,  2.8972]),
                                      dtype=np.float64)
+        # print(self.observation_space.shape)
         self.action_space = Box(low=np.array([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]), high=np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), dtype=np.float64)
-        self.observation_space_size = 14
-        self.action_space_size = 2187
+        # self.observation_space_size = 10
+        # self.action_space_size = 7
         # Set up various robot components
         self.robot = self.getSelf()  # Grab the robot reference from the supervisor to access various robot methods
         self.positionSensorList = Func.get_All_positionSensors(self, self.timestep)
@@ -64,6 +65,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         targetPosition = ToArmCoord.convert(self.target.getPosition())
         message = [i for i in targetPosition]
         message.extend([i for i in self.motorPositionArr])
+        print(message.shape)
         return np.asarray(message)
     def get_default_observation(self):
         """
@@ -114,10 +116,12 @@ class PandaRobotSupervisor(RobotSupervisor):
             done = False
         return done
 
-    # def reset(self):
+    def reset(self):
 
-    #     self.robot = self.getSelf()
-    #     return self.get_observations()
+        self.robot = self.getSelf()
+        self.simulationResetPhysics()
+        
+        return  np.asarray([0.0 for _ in range(self.observation_space.shape[0])], dtype=np.float64)
 
     def solved(self):
         """
@@ -168,6 +172,7 @@ class PandaRobotSupervisor(RobotSupervisor):
             return
         
         self.motorPositionArr = np.array(Func.getValue(self.positionSensorList))
+        print(np.asarray(action).shape)
         for i in range(7):
             motorPosition = self.motorPositionArr[i] + action[i]
             motorPosition = self.motorToRange(motorPosition, i)
@@ -175,13 +180,13 @@ class PandaRobotSupervisor(RobotSupervisor):
             self.motorList[i].setPosition(motorPosition)
             self.motorPositionArr_target[i]=motorPosition # Update motorPositionArr_target 
 
-    def step(self, action):
-        self.apply_action(action)
-        obs = self.get_observations()
-        reward = self.get_reward(action)
-        done = self.is_done()
-        info =""
-        return obs, reward, done, info 
+    # def step(self, action):
+    #     self.apply_action(action)
+    #     obs = self.get_observations()
+    #     reward = self.get_reward(action)
+    #     done = self.is_done()
+    #     info =""
+    #     return obs, reward, done, info 
 
     def setup_motors(self):
         """

@@ -40,7 +40,13 @@ class PPOAgent:
         self.actor_net = Actor(numberOfInputs, numberOfActorOutputs)
         self.critic_net = Critic(numberOfInputs)
         
-        self.load('./tmp/ppo/')
+        try:
+            self.load('../tmp/ppo')
+        except OSError:
+            print ("No pretrained models!")
+        else:
+            print ("Successfully loaded the pretrained models!")
+
         if self.use_cuda:
             #print("yes")
             print(torch.cuda.is_available())
@@ -75,6 +81,7 @@ class PPOAgent:
             return output
         elif type_ == "selectAction":
             c = Categorical(action_prob)
+            print(c)
             action = c.sample()
             return action.item(), action_prob[:, action.item()].item()
         elif type_ == "selectActionMax":
