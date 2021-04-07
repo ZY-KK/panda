@@ -164,7 +164,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         :type action: list of float
         """
         # ignore this action and keep moving
-        if action[0]==-1 and len(action)==1:
+        if action[0]==-1 or len(action)==1:
             for i in range(7):
                 self.motorPositionArr[i] = self.positionSensorList[i].getValue()
                 self.motorList[i].setVelocity(MOTOR_VELOCITY)
@@ -172,7 +172,7 @@ class PandaRobotSupervisor(RobotSupervisor):
             return
         
         self.motorPositionArr = np.array(Func.getValue(self.positionSensorList))
-        print(np.asarray(action).shape)
+        # print(np.asarray(action).shape)
         for i in range(7):
             motorPosition = self.motorPositionArr[i] + action[i]
             motorPosition = self.motorToRange(motorPosition, i)

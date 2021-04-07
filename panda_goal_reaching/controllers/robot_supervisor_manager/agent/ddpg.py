@@ -208,6 +208,7 @@ class DDPGAgent(object):
         mu_prime = mu + T.tensor(self.noise(),
                                  dtype=T.float).to(self.actor.device)
         self.actor.train()
+        
         return mu_prime.cpu().detach().numpy()
 
     def choose_action_test(self, observation):

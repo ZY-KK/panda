@@ -19,7 +19,7 @@ def run(load_path):
     # agent = PPOAgent(env.observation_space_size,
     #                  env.action_space_size, use_cuda=False)
     # model = ppo("MlpPolicy", env, verbose=1)
-    agent = PPO_agent(n_actions=env.action_space.shape[0], input_dims = env.observation_space.shape[0])
+    agent = PPO_agent(n_actions=env.action_space.shape[0], input_dims = env.observation_space.shape)
     episodeCount = 0
     solved = False  # Whether the solved requirement is met
 
