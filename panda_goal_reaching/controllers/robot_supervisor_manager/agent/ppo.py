@@ -51,7 +51,7 @@ class PPOMemory:
 
 class ActorNetwork(nn.Module):
     def __init__(self, n_actions, input_dims, alpha,
-                 fc1_dims=256, fc2_dims=256, chkpt_dir='../tmp/ppo'):
+                 fc1_dims=256, fc2_dims=256, chkpt_dir='./tmp/ppo'):
         super(ActorNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'actor_torch_ppo')
@@ -83,7 +83,7 @@ class ActorNetwork(nn.Module):
 
 class CriticNetwork(nn.Module):
     def __init__(self, input_dims, alpha, fc1_dims=256, fc2_dims=256,
-                 chkpt_dir='../tmp/ppo'):
+                 chkpt_dir='./tmp/ppo'):
         super(CriticNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'critic_torch_ppo')
@@ -122,7 +122,14 @@ class PPO_agent:
         self.actor = ActorNetwork(n_actions, input_dims, alpha)
         self.critic = CriticNetwork(input_dims, alpha)
         self.memory = PPOMemory(batch_size)
-
+        
+        print("Try to load the pretrained models...")
+        try:
+            self.load_models()
+        except OSError:
+            print ("No pretrained models!")
+        else:
+            print ("Successfully loaded the pretrained models!")
     def remember(self, state, action, probs, vals, reward, done):
         self.memory.store_memory(state, action, probs, vals, reward, done)
 
@@ -140,12 +147,14 @@ class PPO_agent:
         state = T.tensor([observation], dtype=T.float).to(self.actor.device)
 
         dist = self.actor(state)
-        
+        # print("===dist:", dist)
         value = self.critic(state)
         action = dist.sample()
+        # print("===action:", action.size())
 
         probs = T.squeeze(dist.log_prob(action)).item()
         action = T.squeeze(action).item()
+        # print("===action:", action)
         value = T.squeeze(value).item()
 
         return action, probs, value
