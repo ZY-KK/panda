@@ -1,5 +1,6 @@
 from deepbots.supervisor.controllers.robot_supervisor import RobotSupervisor
 from gym.spaces import Box, Discrete
+from gym import spaces
 import numpy as np
 from ArmUtil import Func, ToArmCoord
 # How many steps to run each episode (changing this messes up the solved condition)
@@ -54,7 +55,7 @@ class PandaRobotSupervisor(RobotSupervisor):
                                      dtype=np.float64)
         self.action_space = Box(low=np.array([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]),
                                 high=np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), dtype=np.float64)
-
+        # self.action_space = spaces.Discrete(7)
         # Set up various robot components
         # Grab the robot reference from the supervisor to access various robot methods
         self.robot = self.getSelf()
@@ -98,17 +99,17 @@ class PandaRobotSupervisor(RobotSupervisor):
         prec = 0.0001
         err = np.absolute(np.array(self.motorPositionArr) -
                           np.array(self.motorPositionArr_target)) < prec
-        if not np.all(err) and self.cnt_handshaking < 20:
-            self.cnt_handshaking = self.cnt_handshaking + 1
-            return ["StillMoving"]
-        else:
-            self.cnt_handshaking = 0
+        # if not np.all(err) and self.cnt_handshaking < 20:
+        #     self.cnt_handshaking = self.cnt_handshaking + 1
+        #     return ["StillMoving"]
+        # else:
+        #     self.cnt_handshaking = 0
         # ----------------------
 
         targetPosition = ToArmCoord.convert(self.target.getPosition())
         message = [i for i in targetPosition]
         message.extend([i for i in self.motorPositionArr])
-        return message
+        return np.asarray(message)
 
     def get_reward(self, action):
         """
@@ -163,7 +164,13 @@ class PandaRobotSupervisor(RobotSupervisor):
             if np.mean(self.episodeScoreList[-500:]) > 120.0:
                 return True
         return False
-
+    def reset(self):
+        
+        self.simulationResetPhysics()
+        
+        
+        return np.array([0.0 for _ in range(self.observation_space.shape[0])]).astype(np.float64)
+        
     def get_default_observation(self):
         """
         Simple implementation returning the default observation which is a zero vector in the shape
