@@ -1,0 +1,41 @@
+#VRML_SIM R2021a utf8
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.025001683873645004 -0.995098155547884 -0.09567955177927008 2.695982192987367
+  position -1.2826806337119814 1.2334366971175743 -4.880219032989032
+}
+TexturedBackgroundLight {
+}
+Background {
+  skyColor [
+    0.333333 0.341176 0.32549
+  ]
+}
+RectangleArena {
+  floorSize 2 2
+  wallHeight 1e-05
+}
+Panda {
+  translation 0 0.01 -0.46
+  rotation 1 0 0 -1.5707953071795862
+}
+DEF TARGET1 Solid {
+  translation 0.5 0.5 0
+  scale 0.5 0.5 0.5
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        metalness 0
+        IBLStrength 0
+        emissiveIntensity 0
+      }
+      geometry Sphere {
+        radius 0.05
+      }
+    }
+  ]
+  name "solid(1)"
+}

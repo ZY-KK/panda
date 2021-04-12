@@ -1,0 +1,226 @@
+#VRML_SIM R2021a utf8
+# license: Apache License 2.0
+# license url: http://www.apache.org/licenses/LICENSE-2.0
+# This is a proto file for Webots for the TestRobot
+# Extracted from: ./panda_with_bound.URDF
+
+PROTO TestRobot [
+  field  SFVec3f     translation     0 0 0
+  field  SFRotation  rotation        0 1 0 0
+  field  SFString    name            "TestRobot"  # Is `Robot.name`.
+  field  SFString    controller      "void"       # Is `Robot.controller`.
+  field  MFString    controllerArgs  []           # Is `Robot.controllerArgs`.
+  field  SFString    customData      ""           # Is `Robot.customData`.
+  field  SFBool      supervisor      FALSE        # Is `Robot.supervisor`.
+  field  SFBool      synchronization TRUE         # Is `Robot.synchronization`.
+  field  SFBool      selfCollision   FALSE        # Is `Robot.selfCollision`.
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    controller IS controller
+    controllerArgs IS controllerArgs
+    customData IS customData
+    supervisor IS supervisor
+    synchronization IS synchronization
+    selfCollision IS selfCollision
+    children [
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 0.000000 1.000000
+          anchor 0.000000 0.000000 0.141000
+          dampingConstant 0.0
+          staticFriction 0.0
+        }
+        device [
+          RotationalMotor {
+            name "joint_1"
+            maxVelocity 2.175
+            minPosition -2.8973
+            maxPosition 2.8973
+            maxTorque 87.0
+          }
+          PositionSensor {
+            name "joint_1_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.000000 0.000000 0.141000
+          rotation 0.000000 1.000000 0.000000 0.000000
+          children [
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                axis 0.000000 1.000000 -0.000004
+                anchor 0.000000 0.000000 0.192000
+                dampingConstant 0.0
+                staticFriction 0.0
+              }
+              device [
+                RotationalMotor {
+                  name "joint_2"
+                  maxVelocity 2.175
+                  minPosition -1.7628
+                  maxPosition 1.7628
+                  maxTorque 87.0
+                }
+                PositionSensor {
+                  name "joint_2_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.000000 0.000000 0.192000
+                rotation -1.000000 0.000000 0.000000 1.570800
+                children [
+                  HingeJoint {
+                    jointParameters HingeJointParameters {
+                      axis 0.000000 -1.000000 -0.000004
+                      anchor 0.000000 -0.195000 0.000000
+                      dampingConstant 0.0
+                      staticFriction 0.0
+                    }
+                    device [
+                      RotationalMotor {
+                        name "joint_3"
+                        maxVelocity 2.175
+                        minPosition -2.8973
+                        maxPosition 2.8973
+                        maxTorque 87.0
+                      }
+                      PositionSensor {
+                        name "joint_3_sensor"
+                      }
+                    ]
+                    endPoint Solid {
+                      translation 0.000000 -0.195000 0.000000
+                      rotation 1.000000 0.000000 0.000000 1.570800
+                      children [
+                        HingeJoint {
+                          jointParameters HingeJointParameters {
+                            axis 0.000000 -1.000000 -0.000004
+                            anchor 0.082500 0.000000 0.124000
+                            dampingConstant 0.0
+                            staticFriction 0.0
+                          }
+                          device [
+                            RotationalMotor {
+                              name "joint_4"
+                              maxVelocity 2.175
+                              minPosition -3.0718
+                              maxPosition -0.0698
+                              maxTorque 87.0
+                            }
+                            PositionSensor {
+                              name "joint_4_sensor"
+                            }
+                          ]
+                          endPoint Solid {
+                            translation 0.082500 0.000000 0.124000
+                            rotation 1.000000 0.000000 0.000000 1.570800
+                            children [
+                              HingeJoint {
+                                jointParameters HingeJointParameters {
+                                  axis 0.000000 1.000000 -0.000004
+                                  anchor -0.082500 0.122000 0.000000
+                                  dampingConstant 0.0
+                                  staticFriction 0.0
+                                }
+                                device [
+                                  RotationalMotor {
+                                    name "joint_5"
+                                    maxVelocity 2.61
+                                    minPosition -2.8973
+                                    maxPosition 2.8973
+                                    maxTorque 12.0
+                                  }
+                                  PositionSensor {
+                                    name "joint_5_sensor"
+                                  }
+                                ]
+                                endPoint Solid {
+                                  translation -0.082500 0.122000 0.000000
+                                  rotation -1.000000 0.000000 0.000000 1.570800
+                                  children [
+                                    HingeJoint {
+                                      jointParameters HingeJointParameters {
+                                        axis 0.000000 -1.000000 -0.000004
+                                        anchor 0.000000 0.000000 0.259000
+                                        dampingConstant 0.0
+                                        staticFriction 0.0
+                                      }
+                                      device [
+                                        RotationalMotor {
+                                          name "joint_6"
+                                          maxVelocity 2.61
+                                          minPosition -0.0175
+                                          maxPosition 3.7525
+                                          maxTorque 12.0
+                                        }
+                                        PositionSensor {
+                                          name "joint_6_sensor"
+                                        }
+                                      ]
+                                      endPoint Solid {
+                                        translation 0.000000 0.000000 0.259000
+                                        rotation 1.000000 0.000000 0.000000 1.570800
+                                        children [
+                                          HingeJoint {
+                                            jointParameters HingeJointParameters {
+                                              axis 0.000000 -1.000000 -0.000004
+                                              anchor 0.088000 -0.107000 0.000000
+                                              dampingConstant 0.0
+                                              staticFriction 0.0
+                                            }
+                                            device [
+                                              RotationalMotor {
+                                                name "joint_7n8"
+                                                maxVelocity 2.61
+                                                minPosition -2.8973
+                                                maxPosition 2.8973
+                                                maxTorque 12.0
+                                              }
+                                              PositionSensor {
+                                                name "joint_7n8_sensor"
+                                              }
+                                            ]
+                                            endPoint Solid {
+                                              translation 0.088000 -0.107000 0.000000
+                                              rotation 1.000000 0.000000 0.000000 1.570800
+                                              children [
+                                                Solid {
+                                                  translation 0.000000 0.000000 0.103400
+                                                  rotation 0.000000 1.000000 0.000000 0.000000
+                                                  name "link_finger_center"
+                                                }
+                                              ]
+                                              name "link_7n8"
+                                            }
+                                          }
+                                        ]
+                                        name "link_6"
+                                      }
+                                    }
+                                  ]
+                                  name "link_5"
+                                }
+                              }
+                            ]
+                            name "link_4"
+                          }
+                        }
+                      ]
+                      name "link_3"
+                    }
+                  }
+                ]
+                name "link_2"
+              }
+            }
+          ]
+          name "link_1"
+        }
+      }
+    ]
+    name IS name 
+  }
+}

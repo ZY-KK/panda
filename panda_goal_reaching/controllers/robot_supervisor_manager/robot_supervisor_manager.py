@@ -28,6 +28,6 @@ else:
 
 # load_path = "./tmp/ddpg/" # pass a path to load the pretrained models, and pass "" for training from scratch
 load_path = "./tmp/ppo"
-# DDPG_runner.run(load_path)
-Stable_baseline_runner.run(load_path)
+DDPG_runner.run(load_path)
+# Stable_baseline_runner.run(load_path)
 # PPO_runner.run()

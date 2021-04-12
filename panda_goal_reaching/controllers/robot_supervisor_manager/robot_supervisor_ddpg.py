@@ -1,7 +1,11 @@
 from deepbots.supervisor.controllers.robot_supervisor import RobotSupervisor
 from gym.spaces import Box, Discrete
 import numpy as np
-from ArmUtil import Func, ToArmCoord
+from ArmUtil import Func, ToArmCoord,LinkInit
+from ikpy.chain import Chain
+from ikpy.link import OriginLink, URDFLink
+import tempfile
+import sys
 # How many steps to run each episode (changing this messes up the solved condition)
 STEPS_PER_EPISODE = 300
 MOTOR_VELOCITY = 10
@@ -67,7 +71,15 @@ class PandaRobotSupervisor(RobotSupervisor):
         self.kinect_camera = self.getDevice("kinect color")
         self.kinect_range = self.getDevice("kinect range")
         
-        
+        # add chain
+        # filename = None
+        # with tempfile.NamedTemporaryFile(suffix='.urdf', delete=False) as file:
+        #     filename = file.name
+        #     file.write(self.getUrdf().encode('utf-8'))
+        # self.armChain = Chain.from_urdf_file(filename)
+        # self.show_my_chain_links()
+        # self.armChain = LinkInit.getChain()
+        # self.show_my_chain_links()
         self.setup_motors()
 
         # Set up misc
@@ -82,6 +94,10 @@ class PandaRobotSupervisor(RobotSupervisor):
 
         # handshaking limit
         self.cnt_handshaking = 0
+
+    def show_my_chain_links(self):
+        print("Len of links =", len(self.armChain.links))
+        print(self.armChain.links)
 
     def get_observations(self):
         """
@@ -98,13 +114,14 @@ class PandaRobotSupervisor(RobotSupervisor):
         prec = 0.0001
         err = np.absolute(np.array(self.motorPositionArr) -
                           np.array(self.motorPositionArr_target)) < prec
+        """
         if not np.all(err) and self.cnt_handshaking < 20:
             self.cnt_handshaking = self.cnt_handshaking + 1
             return ["StillMoving"]
         else:
             self.cnt_handshaking = 0
         # ----------------------
-
+        """
         targetPosition = ToArmCoord.convert(self.target.getPosition())
         message = [i for i in targetPosition]
         message.extend([i for i in self.motorPositionArr])
@@ -119,14 +136,16 @@ class PandaRobotSupervisor(RobotSupervisor):
         :return: - 2-norm (+ extra points)
         :rtype: float
         """
-        targetPosition = self.target.getPosition()
-        targetPosition = ToArmCoord.convert(targetPosition)
+        self.targetPosition = self.target.getPosition()
+        self.targetPosition = ToArmCoord.convert(self.targetPosition)
 
-        endEffectorPosition = self.endEffector.getPosition()
-        endEffectorPosition = ToArmCoord.convert(endEffectorPosition)
+        self.endEffectorPosition = self.endEffector.getPosition()
+        self.endEffectorPosition = ToArmCoord.convert(self.endEffectorPosition)
 
-        self.distance = np.linalg.norm([targetPosition[0]-endEffectorPosition[0],
-                                       targetPosition[1]-endEffectorPosition[1], targetPosition[2]-endEffectorPosition[2]])
+        # endPointPos = self.armChain.forward_kinematics([0]+self.motorPositionArr_target+[0], full_kinematics=False)[:3,3]
+        self.distance = np.linalg.norm([self.targetPosition[0]-self.endEffectorPosition[0],
+                                       self.targetPosition[1]-self.endEffectorPosition[1], self.targetPosition[2]-self.endEffectorPosition[2]])
+        # self.distance = np.linalg.norm(endPointPos-self.targetPosition)
         reward = -self.distance  # - 2-norm
 
         # Extra points
@@ -248,6 +267,12 @@ class PandaRobotSupervisor(RobotSupervisor):
                 motorPosition = self.motorToRange(motorPosition, i)
                 self.motorList[i].setVelocity(2.5)
                 self.motorList[i].setPosition(motorPosition)
+    def step(self, action):
+        self.apply_action(action)
+        new_observation = self.get_observations()
+        reward = self.get_reward(action)
+        done = self.is_done()
+        return new_observation, reward, done, ""
 
     def setup_motors(self):
         """
