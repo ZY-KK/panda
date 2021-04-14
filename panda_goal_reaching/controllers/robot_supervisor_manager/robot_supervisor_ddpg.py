@@ -136,15 +136,15 @@ class PandaRobotSupervisor(RobotSupervisor):
         :return: - 2-norm (+ extra points)
         :rtype: float
         """
-        self.targetPosition = self.target.getPosition()
-        self.targetPosition = ToArmCoord.convert(self.targetPosition)
+        targetPosition = self.target.getPosition()
+        targetPosition = ToArmCoord.convert(targetPosition)
 
-        self.endEffectorPosition = self.endEffector.getPosition()
-        self.endEffectorPosition = ToArmCoord.convert(self.endEffectorPosition)
+        endEffectorPosition = self.endEffector.getPosition()
+        endEffectorPosition = ToArmCoord.convert(endEffectorPosition)
 
         # endPointPos = self.armChain.forward_kinematics([0]+self.motorPositionArr_target+[0], full_kinematics=False)[:3,3]
-        self.distance = np.linalg.norm([self.targetPosition[0]-self.endEffectorPosition[0],
-                                       self.targetPosition[1]-self.endEffectorPosition[1], self.targetPosition[2]-self.endEffectorPosition[2]])
+        self.distance = np.linalg.norm([targetPosition[0]-endEffectorPosition[0],
+                                       targetPosition[1]-endEffectorPosition[1], targetPosition[2]-endEffectorPosition[2]])
         # self.distance = np.linalg.norm(endPointPos-self.targetPosition)
         reward = -self.distance  # - 2-norm
 
@@ -234,45 +234,51 @@ class PandaRobotSupervisor(RobotSupervisor):
 
         self.motorPositionArr = np.array(
             Func.getValue(self.positionSensorList))
+        # for i in range(7):
+        #     motorPosition = self.motorPositionArr[i] + action[i]
+        #     motorPosition = self.motorToRange(motorPosition, i)
+        #     self.motorList[i].setVelocity(MOTOR_VELOCITY)
+        #     self.motorList[i].setPosition(motorPosition)
+        #     # Update motorPositionArr_target
+        #     self.motorPositionArr_target[i]=motorPosition
+        
+        # code = int(action[0])
+        # setVelocityList = []
+        # decoding action
+        # for i in range(7):
+        #     setVelocityList.append(code % 3)
+        #     code = int(code/3)
+        #     #print("decode message to action: ", setVelocityList)
+
+        # for i in range(7):
+        #     action = setVelocityList[i]
+        #     if action == 2:
+        #         motorPosition = self.positionSensorList[i].getValue()-0.05
+        #         motorPosition = self.motorToRange(motorPosition, i)
+        #         self.motorList[i].setVelocity(2.5)
+        #         self.motorList[i].setPosition(motorPosition)
+        #     elif action == 1:
+        #         motorPosition = self.positionSensorList[i].getValue()+0.05
+        #         motorPosition = self.motorToRange(motorPosition, i)
+        #         self.motorList[i].setVelocity(2.5)
+        #         self.motorList[i].setPosition(motorPosition)
+        #     else:
+        #         motorPosition = self.positionSensorList[i].getValue()
+        #         motorPosition = self.motorToRange(motorPosition, i)
+        #         self.motorList[i].setVelocity(2.5)
+        #         self.motorList[i].setPosition(motorPosition)
         for i in range(7):
             motorPosition = self.motorPositionArr[i] + action[i]
             motorPosition = self.motorToRange(motorPosition, i)
             self.motorList[i].setVelocity(MOTOR_VELOCITY)
             self.motorList[i].setPosition(motorPosition)
-            # Update motorPositionArr_target
-            self.motorPositionArr_target[i]=motorPosition
-        
-        code = int(action[0])
-        setVelocityList = []
-        # decoding action
-        for i in range(7):
-            setVelocityList.append(code % 3)
-            code = int(code/3)
-            #print("decode message to action: ", setVelocityList)
-
-        for i in range(7):
-            action = setVelocityList[i]
-            if action == 2:
-                motorPosition = self.positionSensorList[i].getValue()-0.05
-                motorPosition = self.motorToRange(motorPosition, i)
-                self.motorList[i].setVelocity(2.5)
-                self.motorList[i].setPosition(motorPosition)
-            elif action == 1:
-                motorPosition = self.positionSensorList[i].getValue()+0.05
-                motorPosition = self.motorToRange(motorPosition, i)
-                self.motorList[i].setVelocity(2.5)
-                self.motorList[i].setPosition(motorPosition)
-            else:
-                motorPosition = self.positionSensorList[i].getValue()
-                motorPosition = self.motorToRange(motorPosition, i)
-                self.motorList[i].setVelocity(2.5)
-                self.motorList[i].setPosition(motorPosition)
-    def step(self, action):
-        self.apply_action(action)
-        new_observation = self.get_observations()
-        reward = self.get_reward(action)
-        done = self.is_done()
-        return new_observation, reward, done, ""
+            self.motorPositionArr_target[i]=motorPosition # Update motorPositionArr_target 
+    # def step(self, action):
+    #     self.apply_action(action)
+    #     new_observation = self.get_observations()
+    #     reward = self.get_reward(action)
+    #     done = self.is_done()
+    #     return new_observation, reward, done, ""
 
     def setup_motors(self):
         """
