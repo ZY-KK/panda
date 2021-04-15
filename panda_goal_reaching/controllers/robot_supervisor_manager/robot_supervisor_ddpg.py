@@ -6,6 +6,8 @@ from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
 import tempfile
 import sys
+from PIL import Image
+
 # How many steps to run each episode (changing this messes up the solved condition)
 STEPS_PER_EPISODE = 300
 MOTOR_VELOCITY = 10
@@ -70,7 +72,10 @@ class PandaRobotSupervisor(RobotSupervisor):
         self.endEffector = self.getFromDef("endEffector")
         self.kinect_camera = self.getDevice("kinect color")
         self.kinect_range = self.getDevice("kinect range")
-        
+        self.fingerL = self.getDevice("finger motor L")
+        self.fingerR = self.getDevice("finger motor R")
+        self.kinect_camera.enable(64)
+        self.kinect_range.enable(64)
         # add chain
         # filename = None
         # with tempfile.NamedTemporaryFile(suffix='.urdf', delete=False) as file:
@@ -99,6 +104,14 @@ class PandaRobotSupervisor(RobotSupervisor):
         print("Len of links =", len(self.armChain.links))
         print(self.armChain.links)
 
+
+    def get_image(self):
+        img_array = self.kinect_camera.getImage()
+        # img_array = np.frombuffer(img_array. dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
+        img_array = np.frombuffer(img_array, dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
+        img = Image.fromarray(img_array)
+        img.save('./test.png')
+
     def get_observations(self):
         """
         This get_observation implementation builds the required observation for the Panda goal reaching problem.
@@ -108,8 +121,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         :rtype: list
         """
 
-        # self.kinect_camera.enable(32)
-        # self.kinect_range.enable(32)
+        self.get_image()
         # process of negotiation
         prec = 0.0001
         err = np.absolute(np.array(self.motorPositionArr) -
@@ -222,7 +234,8 @@ class PandaRobotSupervisor(RobotSupervisor):
         :type action: list of float
         """
 
-        
+        self.fingerL.setPosition(0.02)
+        self.fingerR.setPosition(0.02)
         # ignore this action and keep moving
         if action[0]==-1 and len(action)==1:
             for i in range(7):
