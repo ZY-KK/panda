@@ -70,12 +70,12 @@ class PandaRobotSupervisor(RobotSupervisor):
         # Select one of the targets
         self.target = self.getFromDef("TARGET1")
         self.endEffector = self.getFromDef("endEffector")
-        self.kinect_camera = self.getDevice("kinect color")
-        self.kinect_range = self.getDevice("kinect range")
+        # self.kinect_camera = self.getDevice("kinect color")
+        # self.kinect_range = self.getDevice("kinect range")
         self.fingerL = self.getDevice("finger motor L")
         self.fingerR = self.getDevice("finger motor R")
-        self.kinect_camera.enable(64)
-        self.kinect_range.enable(64)
+        # self.kinect_camera.enable(64)
+        # self.kinect_range.enable(64)
         # add chain
         # filename = None
         # with tempfile.NamedTemporaryFile(suffix='.urdf', delete=False) as file:
@@ -121,7 +121,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         :rtype: list
         """
 
-        self.get_image()
+        # self.get_image()
         # process of negotiation
         prec = 0.0001
         err = np.absolute(np.array(self.motorPositionArr) -
