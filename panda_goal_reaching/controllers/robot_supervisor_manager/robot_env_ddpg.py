@@ -1,7 +1,7 @@
 from deepbots.supervisor.controllers.robot_supervisor import RobotSupervisor
 from gym.spaces import Box, Discrete
 import numpy as np
-from ArmUtil import Func, ToArmCoord,LinkInit
+from ArmUtil import Func, ToArmCoord
 from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
 import tempfile
@@ -63,8 +63,9 @@ class PandaRobotSupervisor(RobotSupervisor):
 
         # Set up various robot components
         # Grab the robot reference from the supervisor to access various robot methods
-        print("test")
+        
         self.robot = self.getSelf()
+        print("test")
         
         # self.positionSensorList = Func.get_All_positionSensors(
         #     self, self.timestep)
@@ -72,7 +73,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         # Select one of the targets
         self.target = self.getFromDef("TARGET1")
         # self.endEffector = self.getFromDef("endEffector")
-        self.endEffector 
+        
         # self.kinect_camera = self.getDevice("kinect color")
         # self.kinect_range = self.getDevice("kinect range")
         self.fingerL = self.getDevice("panda_1_finger_joint2")
