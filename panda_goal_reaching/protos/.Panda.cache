@@ -1,5 +1,5 @@
 Webots Proto Cache File version 1.5
-protoFileHash: 91d0e8a1ead303ca132c0499b887809c
+protoFileHash: 5809f554724c3f76ef2ed11f8dc40c2f
 needsRobotAncestor: 1
 baseType: Robot
 slotType: 
@@ -8,4 +8,4 @@ tags:
 license:  Apache License 2.0
 licenseUrl:  http://www.apache.org/licenses/LICENSE-2.0
 documentationUrl: 
-info: This\sis\sa\sproto\sfile\sfor\sWebots\sfor\sthe\sPanda\nExtracted\sfrom:\s./urdf/panda.urdf\n
+info: This\sis\sa\sproto\sfile\sfor\sWebots\sfor\sthe\sPanda\nExtracted\sfrom:\s./panda.urdf\n

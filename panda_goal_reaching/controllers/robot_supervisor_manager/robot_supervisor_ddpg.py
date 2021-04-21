@@ -77,12 +77,12 @@ class PandaRobotSupervisor(RobotSupervisor):
         # self.kinect_camera.enable(64)
         # self.kinect_range.enable(64)
         # add chain
-        # filename = None
-        # with tempfile.NamedTemporaryFile(suffix='.urdf', delete=False) as file:
-        #     filename = file.name
-        #     file.write(self.getUrdf().encode('utf-8'))
-        # self.armChain = Chain.from_urdf_file(filename)
-        # self.show_my_chain_links()
+        filename = None
+        with tempfile.NamedTemporaryFile(suffix='.urdf', delete=False) as file:
+            filename = file.name
+            file.write(self.getUrdf().encode('utf-8'))
+        self.armChain = Chain.from_urdf_file(filename)
+        self.show_my_chain_links()
         # self.armChain = LinkInit.getChain()
         # self.show_my_chain_links()
         self.setup_motors()

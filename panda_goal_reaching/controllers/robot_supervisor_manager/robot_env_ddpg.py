@@ -1,8 +1,13 @@
 from deepbots.supervisor.controllers.robot_supervisor import RobotSupervisor
 from gym.spaces import Box, Discrete
-from gym import spaces
 import numpy as np
-from ArmUtil import Func, ToArmCoord
+from ArmUtil import Func, ToArmCoord,LinkInit
+from ikpy.chain import Chain
+from ikpy.link import OriginLink, URDFLink
+import tempfile
+import sys
+from PIL import Image
+
 # How many steps to run each episode (changing this messes up the solved condition)
 STEPS_PER_EPISODE = 300
 MOTOR_VELOCITY = 10
@@ -45,7 +50,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         In the constructor the observation_space and action_space are set and references to the various components
         of the robot required are initialized here.
         """
-
+        
         super().__init__()
 
         # Set up gym spaces
@@ -55,20 +60,34 @@ class PandaRobotSupervisor(RobotSupervisor):
                                      dtype=np.float64)
         self.action_space = Box(low=np.array([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]),
                                 high=np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), dtype=np.float64)
-        # self.action_space = spaces.Discrete(7)
+
         # Set up various robot components
         # Grab the robot reference from the supervisor to access various robot methods
+        print("test")
         self.robot = self.getSelf()
-        self.positionSensorList = Func.get_All_positionSensors(
-            self, self.timestep)
-
+        
+        # self.positionSensorList = Func.get_All_positionSensors(
+        #     self, self.timestep)
+        
         # Select one of the targets
         self.target = self.getFromDef("TARGET1")
-        self.endEffector = self.getFromDef("endEffector")
-        self.kinect_camera = self.getDevice("kinect color")
-        self.kinect_range = self.getDevice("kinect range")
-        
-        
+        # self.endEffector = self.getFromDef("endEffector")
+        self.endEffector 
+        # self.kinect_camera = self.getDevice("kinect color")
+        # self.kinect_range = self.getDevice("kinect range")
+        self.fingerL = self.getDevice("panda_1_finger_joint2")
+        self.fingerR = self.getDevice("panda_1_finger_joint1")
+        # self.kinect_camera.enable(64)
+        # self.kinect_range.enable(64)
+        # add chain
+        filename = None
+        with tempfile.NamedTemporaryFile(suffix='.urdf', delete=False) as file:
+            filename = file.name
+            file.write(self.getUrdf().encode('utf-8'))
+        self.armChain = Chain.from_urdf_file(filename)
+        self.show_my_chain_links()
+        # self.armChain = LinkInit.getChain()
+        # self.show_my_chain_links()
         self.setup_motors()
 
         # Set up misc
@@ -84,6 +103,18 @@ class PandaRobotSupervisor(RobotSupervisor):
         # handshaking limit
         self.cnt_handshaking = 0
 
+    def show_my_chain_links(self):
+        print("Len of links =", len(self.armChain.links))
+        print(self.armChain.links)
+
+
+    def get_image(self):
+        img_array = self.kinect_camera.getImage()
+        # img_array = np.frombuffer(img_array. dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
+        img_array = np.frombuffer(img_array, dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
+        img = Image.fromarray(img_array)
+        img.save('./test.png')
+
     def get_observations(self):
         """
         This get_observation implementation builds the required observation for the Panda goal reaching problem.
@@ -93,23 +124,23 @@ class PandaRobotSupervisor(RobotSupervisor):
         :rtype: list
         """
 
-        # self.kinect_camera.enable(32)
-        # self.kinect_range.enable(32)
+        # self.get_image()
         # process of negotiation
         prec = 0.0001
         err = np.absolute(np.array(self.motorPositionArr) -
                           np.array(self.motorPositionArr_target)) < prec
-        # if not np.all(err) and self.cnt_handshaking < 20:
-        #     self.cnt_handshaking = self.cnt_handshaking + 1
-        #     return ["StillMoving"]
-        # else:
-        #     self.cnt_handshaking = 0
+        """
+        if not np.all(err) and self.cnt_handshaking < 20:
+            self.cnt_handshaking = self.cnt_handshaking + 1
+            return ["StillMoving"]
+        else:
+            self.cnt_handshaking = 0
         # ----------------------
-
+        """
         targetPosition = ToArmCoord.convert(self.target.getPosition())
         message = [i for i in targetPosition]
         message.extend([i for i in self.motorPositionArr])
-        return np.asarray(message)
+        return message
 
     def get_reward(self, action):
         """
@@ -126,8 +157,10 @@ class PandaRobotSupervisor(RobotSupervisor):
         endEffectorPosition = self.endEffector.getPosition()
         endEffectorPosition = ToArmCoord.convert(endEffectorPosition)
 
+        # endPointPos = self.armChain.forward_kinematics([0]+self.motorPositionArr_target+[0], full_kinematics=False)[:3,3]
         self.distance = np.linalg.norm([targetPosition[0]-endEffectorPosition[0],
                                        targetPosition[1]-endEffectorPosition[1], targetPosition[2]-endEffectorPosition[2]])
+        # self.distance = np.linalg.norm(endPointPos-self.targetPosition)
         reward = -self.distance  # - 2-norm
 
         # Extra points
@@ -164,13 +197,7 @@ class PandaRobotSupervisor(RobotSupervisor):
             if np.mean(self.episodeScoreList[-500:]) > 120.0:
                 return True
         return False
-    def reset(self):
-        
-        self.simulationResetPhysics()
-        
-        
-        return np.array([0.0 for _ in range(self.observation_space.shape[0])]).astype(np.float64)
-        
+
     def get_default_observation(self):
         """
         Simple implementation returning the default observation which is a zero vector in the shape
@@ -210,7 +237,8 @@ class PandaRobotSupervisor(RobotSupervisor):
         :type action: list of float
         """
 
-        
+        self.fingerL.setPosition(0.02)
+        self.fingerR.setPosition(0.02)
         # ignore this action and keep moving
         if action[0]==-1 and len(action)==1:
             for i in range(7):
@@ -222,39 +250,51 @@ class PandaRobotSupervisor(RobotSupervisor):
 
         self.motorPositionArr = np.array(
             Func.getValue(self.positionSensorList))
+        # for i in range(7):
+        #     motorPosition = self.motorPositionArr[i] + action[i]
+        #     motorPosition = self.motorToRange(motorPosition, i)
+        #     self.motorList[i].setVelocity(MOTOR_VELOCITY)
+        #     self.motorList[i].setPosition(motorPosition)
+        #     # Update motorPositionArr_target
+        #     self.motorPositionArr_target[i]=motorPosition
+        
+        # code = int(action[0])
+        # setVelocityList = []
+        # decoding action
+        # for i in range(7):
+        #     setVelocityList.append(code % 3)
+        #     code = int(code/3)
+        #     #print("decode message to action: ", setVelocityList)
+
+        # for i in range(7):
+        #     action = setVelocityList[i]
+        #     if action == 2:
+        #         motorPosition = self.positionSensorList[i].getValue()-0.05
+        #         motorPosition = self.motorToRange(motorPosition, i)
+        #         self.motorList[i].setVelocity(2.5)
+        #         self.motorList[i].setPosition(motorPosition)
+        #     elif action == 1:
+        #         motorPosition = self.positionSensorList[i].getValue()+0.05
+        #         motorPosition = self.motorToRange(motorPosition, i)
+        #         self.motorList[i].setVelocity(2.5)
+        #         self.motorList[i].setPosition(motorPosition)
+        #     else:
+        #         motorPosition = self.positionSensorList[i].getValue()
+        #         motorPosition = self.motorToRange(motorPosition, i)
+        #         self.motorList[i].setVelocity(2.5)
+        #         self.motorList[i].setPosition(motorPosition)
         for i in range(7):
             motorPosition = self.motorPositionArr[i] + action[i]
             motorPosition = self.motorToRange(motorPosition, i)
             self.motorList[i].setVelocity(MOTOR_VELOCITY)
             self.motorList[i].setPosition(motorPosition)
-            # Update motorPositionArr_target
-            self.motorPositionArr_target[i]=motorPosition
-        
-        code = int(action[0])
-        setVelocityList = []
-        # decoding action
-        for i in range(7):
-            setVelocityList.append(code % 3)
-            code = int(code/3)
-            #print("decode message to action: ", setVelocityList)
-
-        for i in range(7):
-            action = setVelocityList[i]
-            if action == 2:
-                motorPosition = self.positionSensorList[i].getValue()-0.05
-                motorPosition = self.motorToRange(motorPosition, i)
-                self.motorList[i].setVelocity(2.5)
-                self.motorList[i].setPosition(motorPosition)
-            elif action == 1:
-                motorPosition = self.positionSensorList[i].getValue()+0.05
-                motorPosition = self.motorToRange(motorPosition, i)
-                self.motorList[i].setVelocity(2.5)
-                self.motorList[i].setPosition(motorPosition)
-            else:
-                motorPosition = self.positionSensorList[i].getValue()
-                motorPosition = self.motorToRange(motorPosition, i)
-                self.motorList[i].setVelocity(2.5)
-                self.motorList[i].setPosition(motorPosition)
+            self.motorPositionArr_target[i]=motorPosition # Update motorPositionArr_target 
+    # def step(self, action):
+    #     self.apply_action(action)
+    #     new_observation = self.get_observations()
+    #     reward = self.get_reward(action)
+    #     done = self.is_done()
+    #     return new_observation, reward, done, ""
 
     def setup_motors(self):
         """

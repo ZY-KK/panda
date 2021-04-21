@@ -1,6 +1,6 @@
 from numpy import convolve, ones, mean, random
-
-from robot_supervisor_ddpg import PandaRobotSupervisor
+from robot_env_ddpg import PandaRobotSupervisor
+# from robot_supervisor_ddpg import PandaRobotSupervisor
 from agent.ddpg import DDPGAgent
 
 from robot_supervisor_ddpg import STEPS_PER_EPISODE
