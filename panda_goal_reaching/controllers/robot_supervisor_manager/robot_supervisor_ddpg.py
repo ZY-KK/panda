@@ -83,9 +83,8 @@ class PandaRobotSupervisor(RobotSupervisor):
             file.write(self.getUrdf().encode('utf-8'))
         self.armChain = Chain.from_urdf_file(filename)
         self.show_my_chain_links()
-        self.armChain = LinkInit.getChain()
-        self.show_my_chain_links()
         
+                
         self.setup_motors()
 
         # Set up misc

@@ -79,8 +79,8 @@ class PandaRobotSupervisor(RobotSupervisor):
         self.fingerR = self.getDevice("panda_1_finger_joint1")
         self.fingerLPos = self.getDevice("panda_1_finger_joint2_sensor")
         self.fingerRPos = self.getDevice("panda_1_finger_joint1_sensor")
-        self.fingerLPos.enable()
-        self.fingerRPos.enable()
+        self.fingerLPos.enable(self.timestep)
+        self.fingerRPos.enable(self.timestep)
         # self.kinect_camera.enable(64)
         # self.kinect_range.enable(64)
         # add chain
