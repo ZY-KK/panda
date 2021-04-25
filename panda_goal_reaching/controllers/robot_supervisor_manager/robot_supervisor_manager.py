@@ -3,9 +3,10 @@ More runners for RL algorithms can be added here.
 """
 import DDPG_runner
 import PPO_runner
-# import Stable_baseline_runner
+import Stable_baseline_runner
 import os
 import pathlib
+print('hello')
 print(pathlib.Path().absolute())
 # dest of models' checkpoints
 # path = "./tmp/ddpg/"
@@ -28,6 +29,6 @@ else:
 
 # load_path = "./tmp/ddpg/" # pass a path to load the pretrained models, and pass "" for training from scratch
 load_path = "./tmp/ppo"
-DDPG_runner.run(load_path)
-# Stable_baseline_runner.run(load_path)
+# DDPG_runner.run(load_path)
+Stable_baseline_runner.run(load_path)
 # PPO_runner.run()

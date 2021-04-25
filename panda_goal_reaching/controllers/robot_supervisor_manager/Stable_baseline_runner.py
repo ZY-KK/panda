@@ -1,6 +1,7 @@
 from numpy import convolve, ones, mean, random
 import numpy as np
 from robot_env_ddpg import PandaRobotSupervisor
+# from robot_supervisor_ddpg import PandaRobotSupervisor
 from agent.ddpg import DDPGAgent
 from stable_baselines3 import DDPG
 from stable_baselines3.common.env_checker import check_env
@@ -9,9 +10,11 @@ from robot_env_ddpg import STEPS_PER_EPISODE
 EPISODE_LIMIT = 50000
 SAVE_MODELS_PERIOD = 200
 def run(load_path):
+    print("Start")
     # Initialize supervisor object
     env = PandaRobotSupervisor()
     check_env(env)
+    print("check successfully")
     # The agent used here is trained with the DDPG algorithm (https://arxiv.org/abs/1509.02971).
     # We pass (10, ) as numberOfInputs and (7, ) as numberOfOutputs, taken from the gym spaces
     # agent = DDPGAgent(alpha=0.000025, beta=0.00025, input_dims=[env.observation_space.shape[0]], tau=0.001, batch_size=64,  layer1_size=400, layer2_size=400, n_actions=env.action_space.shape[0], load_path=load_path) 
@@ -21,6 +24,8 @@ def run(load_path):
     solved = False  # Whether the solved requirement is met
     agent = DDPG("MlpPolicy", env, action_noise=action_noise, verbose=1)
     agent.learn(total_timesteps=10000)
+    
+    '''
     # Run outer loop until the episodes limit is reached or the task is solved
     while not solved and episodeCount < EPISODE_LIMIT:
         obs = env.reset()  # Reset robot and get starting observation
@@ -35,13 +40,13 @@ def run(load_path):
             action, _states = agent.predict(obs, deterministic=True)
             # Step the supervisor to get the current selectedAction reward, the new state and whether we reached the
             # the done condition
-            obs, reward, done, info = env.step(act*0.032)
+            obs, reward, done, info = env.step(action*0.032)
             # process of negotiation
             while(obs==["StillMoving"]):
                 obs, reward, done, info = env.step([-1])
             
             # Save the current state transition in agent's memory
-            agent.remember(state, act, reward, newState, int(done))
+            agent.remember(_states, action, reward, obs, int(done))
 
             env.episodeScore += reward  # Accumulate episode reward
             # Perform a learning step
@@ -54,14 +59,14 @@ def run(load_path):
                 solved = env.solved()  # Check whether the task is solved
                 break
 
-            obs = newState # state for next step is current step's newState
+            # obs = newState # state for next step is current step's newState
 
         print("Episode #", episodeCount, "score:", env.episodeScore)
         fp = open("./exports/Episode-score.txt","a")
         fp.write(str(env.episodeScore)+'\n')
         fp.close()
         episodeCount += 1  # Increment episode counter
-
+    '''
     agent.save('./tmp/ddpg/model_stable_baseline')
     if not solved:
         print("Reached episode limit and task was not solved, deploying agent for testing...")
@@ -74,9 +79,9 @@ def run(load_path):
     env.target = env.getFromDef("TARGET1") # Select one of the targets
     while True:
         action, _states = agent.predict(obs)
-        obs, reward, done, _ = env.step(act*0.032)
+        obs, reward, done, _ = env.step(action*0.032)
         # process of negotiation
-        while(state==["StillMoving"]):
+        while(obs==["StillMoving"]):
             obs, reward, done, info = env.step([-1])
         
         env.episodeScore += reward  # Accumulate episode reward

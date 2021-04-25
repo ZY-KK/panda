@@ -1,7 +1,7 @@
 from deepbots.supervisor.controllers.robot_supervisor import RobotSupervisor
 from gym.spaces import Box, Discrete
 import numpy as np
-from ArmUtil import Func, ToArmCoord,LinkInit
+from ArmUtil import Func, ToArmCoord
 from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
 import tempfile
@@ -52,6 +52,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         """
 
         super().__init__()
+        print(".............................")
 
         # Set up gym spaces
         self.observation_space = Box(low=np.array([-np.inf, -np.inf, -np.inf, -2.8972, -1.7628, -2.8972, -3.0718, -2.8972, -0.0175, -2.8972]),
@@ -60,14 +61,13 @@ class PandaRobotSupervisor(RobotSupervisor):
                                      dtype=np.float64)
         self.action_space = Box(low=np.array([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]),
                                 high=np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), dtype=np.float64)
-
+        
         # Set up various robot components
         # Grab the robot reference from the supervisor to access various robot methods
         self.robot = self.getSelf()
         self.positionSensorList = Func.get_All_positionSensors(
             self, self.timestep)
-
-        # Select one of the targets
+        # print('sensor:', self.positionSensorList)
         self.target = self.getFromDef("TARGET1")
         self.endEffector = self.getFromDef("endEffector")
         # self.kinect_camera = self.getDevice("kinect color")
@@ -83,8 +83,9 @@ class PandaRobotSupervisor(RobotSupervisor):
             file.write(self.getUrdf().encode('utf-8'))
         self.armChain = Chain.from_urdf_file(filename)
         self.show_my_chain_links()
-        # self.armChain = LinkInit.getChain()
-        # self.show_my_chain_links()
+        self.armChain = LinkInit.getChain()
+        self.show_my_chain_links()
+        
         self.setup_motors()
 
         # Set up misc
@@ -99,18 +100,18 @@ class PandaRobotSupervisor(RobotSupervisor):
 
         # handshaking limit
         self.cnt_handshaking = 0
-
+        # print(self.observation_space.shape)
     def show_my_chain_links(self):
         print("Len of links =", len(self.armChain.links))
         print(self.armChain.links)
 
 
-    def get_image(self):
-        img_array = self.kinect_camera.getImage()
-        # img_array = np.frombuffer(img_array. dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
-        img_array = np.frombuffer(img_array, dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
-        img = Image.fromarray(img_array)
-        img.save('./test.png')
+    # def get_image(self):
+    #     img_array = self.kinect_camera.getImage()
+    #     # img_array = np.frombuffer(img_array. dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
+    #     img_array = np.frombuffer(img_array, dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
+    #     img = Image.fromarray(img_array)
+    #     img.save('./test.png')
 
     def get_observations(self):
         """
@@ -120,7 +121,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         :return: Observation: [Target x, Target y, Target z, Value of Position Sensor on A1, ..., Value of Position Sensor on A7]
         :rtype: list
         """
-
+        # print('obs', self.motorPositionArr)
         # self.get_image()
         # process of negotiation
         prec = 0.0001
@@ -137,6 +138,13 @@ class PandaRobotSupervisor(RobotSupervisor):
         targetPosition = ToArmCoord.convert(self.target.getPosition())
         message = [i for i in targetPosition]
         message.extend([i for i in self.motorPositionArr])
+        message = np.asarray(message, dtype=np.float64)
+        print('msg:', message)
+        print(f'Required shape: {self.observation_space.shape}, state: {message.shape}')
+        print(f'low: {self.observation_space.low}, checking: {np.all(message >= self.observation_space.low)}')
+        print(f'high: {self.observation_space.high}, checking: {np.all(message <= self.observation_space.high)}')
+        index = np.arange(0,10)
+        print(index[message>self.observation_space.high])
         return message
 
     def get_reward(self, action):
@@ -194,6 +202,20 @@ class PandaRobotSupervisor(RobotSupervisor):
             if np.mean(self.episodeScoreList[-500:]) > 120.0:
                 return True
         return False
+    # def reset(self):
+        
+    #     print('Reset simulation')
+    #     self.robot = self.getSelf()
+    #     self.simulationResetPhysics()
+        
+    #     obs = self.get_default_observation()
+    #     obs = np.asarray(obs, dtype=np.float64)
+    #     # print(obs)
+    #     # print(f'Required shape: {self.observation_space.shape}, state: {obs.shape}')
+    #     # print(f'low: {self.observation_space.low}, checking: {np.all(obs >= self.observation_space.low)}')
+    #     # print(f'high: {self.observation_space.high}, checking: {np.all(obs <= self.observation_space.high)}')
+    #     return obs
+
 
     def get_default_observation(self):
         """
@@ -203,8 +225,9 @@ class PandaRobotSupervisor(RobotSupervisor):
         :rtype: list
         """
         Obs = [0.0 for _ in range(self.observation_space.shape[0])]
-        Obs[3] = -0.0698
-        return Obs
+        Obs[6] = -0.0698
+        # print(type(Obs))
+        return np.asarray(Obs, dtype=np.float64)
 
     def motorToRange(self, motorPosition, i):
         if(i == 0):
@@ -247,6 +270,7 @@ class PandaRobotSupervisor(RobotSupervisor):
 
         self.motorPositionArr = np.array(
             Func.getValue(self.positionSensorList))
+        # print('motor:',self.motorPositionArr)
         # for i in range(7):
         #     motorPosition = self.motorPositionArr[i] + action[i]
         #     motorPosition = self.motorToRange(motorPosition, i)
@@ -286,12 +310,14 @@ class PandaRobotSupervisor(RobotSupervisor):
             self.motorList[i].setVelocity(MOTOR_VELOCITY)
             self.motorList[i].setPosition(motorPosition)
             self.motorPositionArr_target[i]=motorPosition # Update motorPositionArr_target 
-    # def step(self, action):
-    #     self.apply_action(action)
-    #     new_observation = self.get_observations()
-    #     reward = self.get_reward(action)
-    #     done = self.is_done()
-    #     return new_observation, reward, done, ""
+    def step(self, action):
+        # print(action)
+        self.apply_action(action)
+        new_observation = self.get_observations()
+        reward = self.get_reward(action)
+        done = self.is_done()
+        info = {}
+        return new_observation, reward, done, info
 
     def setup_motors(self):
         """
