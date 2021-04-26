@@ -10,3 +10,5 @@ renderingMode: PLAIN
 orthographicViewHeight: 1
 textFiles: -1
 consoles: Console:All:All
+renderingDevicePerspectives: Panda:kinect color;1;1;0;0
+renderingDevicePerspectives: Panda:kinect range;1;1;0.156727;0.0126582

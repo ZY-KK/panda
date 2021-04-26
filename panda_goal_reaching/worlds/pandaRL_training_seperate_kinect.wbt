@@ -1,0 +1,40 @@
+#VRML_SIM R2021a utf8
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation 0.0033627784321007 -0.991736637794194 0.12824637608090247 3.042061058458366
+  position 0.11150335554541482 -0.8190050320119568 -2.8033856784606117
+}
+TexturedBackgroundLight {
+}
+Background {
+  skyColor [
+    0.333333 0.341176 0.32549
+  ]
+}
+RectangleArena {
+  floorSize 2 2
+  wallHeight 1e-05
+}
+DEF Panda_robot Panda {
+  rotation -1 0 0 1.5708
+  controller "robot_supervisor_manager"
+}
+DEF TARGET1 Solid {
+  translation 0.5 0.5 0
+  scale 0.5 0.5 0.5
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        metalness 0
+        IBLStrength 0
+        emissiveIntensity 0
+      }
+      geometry Sphere {
+        radius 0.05
+      }
+    }
+  ]
+}

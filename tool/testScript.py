@@ -1,5 +1,7 @@
 import numpy as np
 
-a = np.array([-6.97992434e-02])
-b = np.array([-0.0699])
-print(a>b)
+a = np.zeros([64, 64])
+sensor_pad = np.zeros(a.shape[:2])
+sensor_pad[0][0]=10
+result = np.dstack((a, sensor_pad))
+print(result.shape)
