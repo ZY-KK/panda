@@ -99,6 +99,7 @@ class PandaRobotSupervisor(RobotSupervisor):
 
         # handshaking limit
         self.cnt_handshaking = 0
+        
         # print(self.observation_space.shape)
     def show_my_chain_links(self):
         print("Len of links =", len(self.armChain.links))
@@ -126,6 +127,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         prec = 0.0001
         err = np.absolute(np.array(self.motorPositionArr) -
                           np.array(self.motorPositionArr_target)) < prec
+        
         """
         if not np.all(err) and self.cnt_handshaking < 20:
             self.cnt_handshaking = self.cnt_handshaking + 1

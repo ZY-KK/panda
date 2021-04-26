@@ -6,8 +6,10 @@ from ikpy.chain import Chain
 from ikpy.link import OriginLink, URDFLink
 import tempfile
 import sys
+from torch.autograd import Variable
+import torch
 from PIL import Image
-
+from .agent.Network import Net
 # How many steps to run each episode (changing this messes up the solved condition)
 STEPS_PER_EPISODE = 300
 MOTOR_VELOCITY = 10
@@ -54,13 +56,14 @@ class PandaRobotSupervisor(RobotSupervisor):
         super().__init__()
 
         # Set up gym spaces
-        self.observation_space = Box(low=np.array([-np.inf, -np.inf, -np.inf, -2.8972, -1.7628, -2.8972, -3.0718, -2.8972, -0.0175, -2.8972]),
-                                     high=np.array(
-                                         [np.inf,  np.inf,  np.inf, 2.8972,  1.7628,  2.8972, -0.0698,  2.8972,  3.7525,  2.8972]),
-                                     dtype=np.float64)
-        self.action_space = Box(low=np.array([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]),
-                                high=np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), dtype=np.float64)
-
+        # self.observation_space = Box(low=np.array([-np.inf, -np.inf, -np.inf, -2.8972, -1.7628, -2.8972, -3.0718, -2.8972, -0.0175, -2.8972]),
+        #                              high=np.array(
+        #                                  [np.inf,  np.inf,  np.inf, 2.8972,  1.7628,  2.8972, -0.0698,  2.8972,  3.7525,  2.8972]),
+        #                              dtype=np.float64)
+        self.observation_space = Box(low =-np.inf, high = np.inf, shape=(512,))
+        # self.action_space = Box(low=np.array([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0]),
+        #                         high=np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]), dtype=np.float64)
+        self.action_space = Box(low = -1,high = 1, shape=(3,), dtype=np.float64)
         # Set up various robot components
         # Grab the robot reference from the supervisor to access various robot methods
         
@@ -71,24 +74,25 @@ class PandaRobotSupervisor(RobotSupervisor):
         
         # Select one of the targets
         self.target = self.getFromDef("TARGET1")
-        # self.endEffector = self.getFromDef("endEffector")
+        self.endEffector = self.getFromDef("endEffector")
         
-        # self.kinect_camera = self.getDevice("kinect color")
-        # self.kinect_range = self.getDevice("kinect range")
+        self.kinect_camera = self.getDevice("kinect color")
+        self.kinect_range = self.getDevice("kinect range")
         self.fingerL = self.getDevice("panda_1_finger_joint2")
         self.fingerR = self.getDevice("panda_1_finger_joint1")
         self.fingerLPos = self.getDevice("panda_1_finger_joint2_sensor")
         self.fingerRPos = self.getDevice("panda_1_finger_joint1_sensor")
         self.fingerLPos.enable(self.timestep)
         self.fingerRPos.enable(self.timestep)
-        # self.kinect_camera.enable(64)
-        # self.kinect_range.enable(64)
+        # self.kinect_camera.enable(self.timestep)
+        self.kinect_range.enable(self.timestep)
         # add chain
         filename = None
         with tempfile.NamedTemporaryFile(suffix='.urdf', delete=False) as file:
             filename = file.name
             file.write(self.getUrdf().encode('utf-8'))
         self.armChain = Chain.from_urdf_file(filename)
+        # self.armChain.links = self.armChain.links[1:8]
         self.show_my_chain_links()
         # self.armChain = LinkInit.getChain()
         # self.show_my_chain_links()
@@ -103,10 +107,12 @@ class PandaRobotSupervisor(RobotSupervisor):
         self.motorPositionArr = np.zeros(7)
         self.motorPositionArr_target = np.zeros(7)
         self.distance = float("inf")
-
+        self.net = Net(1, 512)
         # handshaking limit
         self.cnt_handshaking = 0
-
+        self.fingerL.setPosition(0.02)
+        self.fingerR.setPosition(0.02)
+        self._close_grasper = False
     def show_my_chain_links(self):
         print("Len of links =", len(self.armChain.links))
         print(self.armChain.links)
@@ -118,7 +124,18 @@ class PandaRobotSupervisor(RobotSupervisor):
     #     img_array = np.frombuffer(img_array, dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
     #     img = Image.fromarray(img_array)
     #     img.save('./test.png')
-
+    def close_griper(self):
+        
+        self._close_grasper = True
+        self._target_width = 0.01
+        self.fingerRPos.setPosition(self._target_width)
+        self.fingerLPos.setPosition(self._target_width)
+    def object_detected(self):
+        self.grasper_width = 0.08-self.fingerLPos.getPosition()-self.fingerRPos.getPostition()
+        if self.grasper_width>0.01:
+            return True
+        else:
+            return False
     def get_observations(self):
         """
         This get_observation implementation builds the required observation for the Panda goal reaching problem.
@@ -128,24 +145,25 @@ class PandaRobotSupervisor(RobotSupervisor):
         :rtype: list
         """
 
-        # self.get_image()
-        # process of negotiation
-        prec = 0.0001
-        err = np.absolute(np.array(self.motorPositionArr) -
-                          np.array(self.motorPositionArr_target)) < prec
-        """
-        if not np.all(err) and self.cnt_handshaking < 20:
-            self.cnt_handshaking = self.cnt_handshaking + 1
-            return ["StillMoving"]
+      
+        img_array = self.kinect_range.getRangeImageArray()
+        print(img_array)
+        if torch.cuda.is_avaliable():
+            img_var = Variable(img_array).cuda()
         else:
-            self.cnt_handshaking = 0
-        # ----------------------
-        """
-        targetPosition = ToArmCoord.convert(self.target.getPosition())
-        message = [i for i in targetPosition]
-        message.extend([i for i in self.motorPositionArr])
-        message = np.asarray(message, dtype=np.float64)
-        return message
+            img_var = Variable(img_array)
+
+        
+        
+        
+        out = self.net(img_var)
+        
+       
+        width = 0.08-self.fingerLPos.getValue()-self.fingerRPos.getValue()
+      
+        obs = np.append((out, width))
+
+        return obs
 
     def get_reward(self, action):
         """
@@ -156,26 +174,13 @@ class PandaRobotSupervisor(RobotSupervisor):
         :return: - 2-norm (+ extra points)
         :rtype: float
         """
-        targetPosition = self.target.getPosition()
-        targetPosition = ToArmCoord.convert(targetPosition)
-
-        # endEffectorPosition = self.endEffector.getPosition()
-        endEffectorPosition = (self.fingerLPos.getValue+self.fingerRPos.getValue())/2.0
-        endEffectorPosition = ToArmCoord.convert(endEffectorPosition)
-
-        # endPointPos = self.armChain.forward_kinematics([0]+self.motorPositionArr_target+[0], full_kinematics=False)[:3,3]
-        self.distance = np.linalg.norm([targetPosition[0]-endEffectorPosition[0],
-                                       targetPosition[1]-endEffectorPosition[1], targetPosition[2]-endEffectorPosition[2]])
-        # self.distance = np.linalg.norm(endPointPos-self.targetPosition)
-        reward = -self.distance  # - 2-norm
-
-        # Extra points
-        if self.distance < 0.01:
-            reward = reward + 1.5
-        elif self.distance < 0.015:
-            reward = reward + 1.0
-        elif self.distance < 0.03:
-            reward = reward + 0.5
+        reward = 0
+        self.close_griper()
+        detected = self.object_detected()
+        if detected:
+            reward = 1
+        else:
+            reward = -1
         return reward
 
     def is_done(self):
@@ -184,7 +189,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         :return: True if termination conditions are met, False otherwise
         :rtype: bool
         """
-        if(self.distance < 0.005):
+        if(self.object_detected()):
             done = True
         else:
             done = False
@@ -211,9 +216,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         :return: Starting observation zero vector
         :rtype: list
         """
-        Obs = [0.0 for _ in range(self.observation_space.shape[0])]
-        Obs[6] = -0.0698
-        Obs = np.asarray(Obs)
+        Obs = np.zeros(self.observation_space.shape)
         return Obs
 
     def motorToRange(self, motorPosition, i):
@@ -243,31 +246,18 @@ class PandaRobotSupervisor(RobotSupervisor):
         :param action: The message the supervisor sent containing the next action.
         :type action: list of float
         """
-
-        self.fingerL.setPosition(0.02)
-        self.fingerR.setPosition(0.02)
-        # ignore this action and keep moving
-        if action[0]==-1 and len(action)==1:
-            for i in range(7):
-                self.motorPositionArr[i] = self.positionSensorList[i].getValue(
-                )
-                self.motorList[i].setVelocity(MOTOR_VELOCITY)
-                self.motorList[i].setPosition(self.motorPositionArr_target[i])
-            return
-
-        self.motorPositionArr = np.array(
-            Func.getValue(self.positionSensorList))
-        
+        motorPosition = self.armChain.inverse_kinematics(action)
+        print(len(motorPosition))
         for i in range(7):
-            motorPosition = self.motorPositionArr[i] + action[i]
-            motorPosition = self.motorToRange(motorPosition, i)
             self.motorList[i].setVelocity(MOTOR_VELOCITY)
-            self.motorList[i].setPosition(motorPosition)
-            self.motorPositionArr_target[i]=motorPosition # Update motorPositionArr_target 
+            self.motorList[i].setPosition(motorPosition[i+1])
+            # self.motorPositionArr_target[i]=motorPosition # Update motorPositionArr_target 
+        
     def step(self, action):
         self.apply_action(action)
         new_observation = self.get_observations()
         reward = self.get_reward(action)
+        self.episodeScoreList.append(reward)
         done = self.is_done()
         return new_observation, reward, done, {}
 
