@@ -6,7 +6,7 @@ import PPO_runner
 import Stable_baseline_runner
 import os
 import pathlib
-print('hello')
+
 print(pathlib.Path().absolute())
 # dest of models' checkpoints
 # path = "./tmp/ddpg/"

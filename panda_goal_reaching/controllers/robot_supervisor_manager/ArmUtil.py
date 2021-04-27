@@ -72,7 +72,7 @@ class Func:
         positionSensorList = []
         for i in range(7):
             positionSensorName = 'panda_1_joint'+str(i+1)+'_sensor'
-            print(positionSensorName)
+            # print(positionSensorName)
             positionSensor = robot.getDevice(positionSensorName)
             positionSensor.enable(timestep)
             positionSensorList.append(positionSensor)

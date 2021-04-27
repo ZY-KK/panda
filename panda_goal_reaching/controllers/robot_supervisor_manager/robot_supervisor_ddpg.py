@@ -70,12 +70,12 @@ class PandaRobotSupervisor(RobotSupervisor):
         # print('sensor:', self.positionSensorList)
         self.target = self.getFromDef("TARGET1")
         self.endEffector = self.getFromDef("endEffector")
-        # self.kinect_camera = self.getDevice("kinect color")
-        # self.kinect_range = self.getDevice("kinect range")
+        self.kinect_camera = self.getDevice("kinect color")
+        self.kinect_range = self.getDevice("kinect range")
         self.fingerL = self.getDevice("finger motor L")
         self.fingerR = self.getDevice("finger motor R")
-        # self.kinect_camera.enable(64)
-        # self.kinect_range.enable(64)
+        self.kinect_camera.enable(self.timestep)
+        self.kinect_range.enable(self.timestep)
         # add chain
         filename = None
         with tempfile.NamedTemporaryFile(suffix='.urdf', delete=False) as file:
@@ -106,12 +106,13 @@ class PandaRobotSupervisor(RobotSupervisor):
         print(self.armChain.links)
 
 
-    # def get_image(self):
-    #     img_array = self.kinect_camera.getImage()
-    #     # img_array = np.frombuffer(img_array. dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
-    #     img_array = np.frombuffer(img_array, dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
-    #     img = Image.fromarray(img_array)
-    #     img.save('./test.png')
+    def get_image(self):
+        img_array = self.kinect_camera.getImage()
+        print('img', img_array)
+        # img_array = np.frombuffer(img_array. dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
+        img_array = np.frombuffer(img_array, dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
+        img = Image.fromarray(img_array)
+        img.save('./test.png')
 
     def get_observations(self):
         """
@@ -127,7 +128,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         prec = 0.0001
         err = np.absolute(np.array(self.motorPositionArr) -
                           np.array(self.motorPositionArr_target)) < prec
-        
+        self.get_image()
         """
         if not np.all(err) and self.cnt_handshaking < 20:
             self.cnt_handshaking = self.cnt_handshaking + 1

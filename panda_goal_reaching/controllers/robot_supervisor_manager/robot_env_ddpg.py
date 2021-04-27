@@ -9,10 +9,10 @@ import sys
 from torch.autograd import Variable
 import torch
 from PIL import Image
-from .agent.Network import Net
+from agent.Network import Net
 # How many steps to run each episode (changing this messes up the solved condition)
 STEPS_PER_EPISODE = 300
-MOTOR_VELOCITY = 10
+MOTOR_VELOCITY = 2
 
 
 class PandaRobotSupervisor(RobotSupervisor):
@@ -68,7 +68,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         # Grab the robot reference from the supervisor to access various robot methods
         
         self.robot = self.getFromDef("Panda_robot")
-        print(self.robot)
+        print('robot', self.robot)
         
         self.positionSensorList = Func.get_positionSensors(self, self.timestep)
         
@@ -77,6 +77,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         self.endEffector = self.getFromDef("endEffector")
         
         self.kinect_camera = self.getDevice("kinect color")
+        
         self.kinect_range = self.getDevice("kinect range")
         self.fingerL = self.getDevice("panda_1_finger_joint2")
         self.fingerR = self.getDevice("panda_1_finger_joint1")
@@ -84,8 +85,9 @@ class PandaRobotSupervisor(RobotSupervisor):
         self.fingerRPos = self.getDevice("panda_1_finger_joint1_sensor")
         self.fingerLPos.enable(self.timestep)
         self.fingerRPos.enable(self.timestep)
-        # self.kinect_camera.enable(self.timestep)
+        self.kinect_camera.enable(self.timestep)
         self.kinect_range.enable(self.timestep)
+        
         # add chain
         filename = None
         with tempfile.NamedTemporaryFile(suffix='.urdf', delete=False) as file:
@@ -93,7 +95,7 @@ class PandaRobotSupervisor(RobotSupervisor):
             file.write(self.getUrdf().encode('utf-8'))
         self.armChain = Chain.from_urdf_file(filename)
         # self.armChain.links = self.armChain.links[1:8]
-        self.show_my_chain_links()
+        # self.show_my_chain_links()
         # self.armChain = LinkInit.getChain()
         # self.show_my_chain_links()
         self.setup_motors()
@@ -118,12 +120,23 @@ class PandaRobotSupervisor(RobotSupervisor):
         print(self.armChain.links)
 
 
-    # def get_image(self):
-    #     img_array = self.kinect_camera.getImage()
-    #     # img_array = np.frombuffer(img_array. dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
-    #     img_array = np.frombuffer(img_array, dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
-    #     img = Image.fromarray(img_array)
-    #     img.save('./test.png')
+    def get_image(self):
+        img_array = self.kinect_camera.getImage()
+        print(len(img_array))
+        img_array = np.frombuffer(img_array, dtype=np.uint8).reshape((self.kinect_camera.getHeight(), self.kinect_camera.getWidth(), 4))
+        
+        img = Image.fromarray(img_array)
+        img.save('./test.png')
+        return img_array
+    def get_depth(self):
+        img_array = self.kinect_range.getRangeImage()
+        img_array = np.asarray(img_array)
+        print(img_array.shape)
+        img_array = np.frombuffer(img_array, dtype=np.float64).reshape((self.kinect_range.getHeight(), self.kinect_range.getWidth(), 1))
+        
+        img = Image.fromarray(img_array)
+        img.save('./test_depth.png')
+        return img_array
     def close_griper(self):
         
         self._close_grasper = True
@@ -145,13 +158,14 @@ class PandaRobotSupervisor(RobotSupervisor):
         :rtype: list
         """
 
-      
-        img_array = self.kinect_range.getRangeImageArray()
-        print(img_array)
-        if torch.cuda.is_avaliable():
-            img_var = Variable(img_array).cuda()
+        color_array = self.get_image()
+        print(color_array.shape)
+        depth_array = self.get_depth()
+        print(depth_array.shape)
+        if torch.cuda.is_available():
+            img_var = Variable(depth_array).cuda()
         else:
-            img_var = Variable(img_array)
+            img_var = Variable(depth_array)
 
         
         
@@ -247,7 +261,7 @@ class PandaRobotSupervisor(RobotSupervisor):
         :type action: list of float
         """
         motorPosition = self.armChain.inverse_kinematics(action)
-        print(len(motorPosition))
+        # print(len(motorPosition))
         for i in range(7):
             self.motorList[i].setVelocity(MOTOR_VELOCITY)
             self.motorList[i].setPosition(motorPosition[i+1])
